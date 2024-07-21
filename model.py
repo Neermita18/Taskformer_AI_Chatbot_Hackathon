@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 from datasets import load_dataset
 import import_ipynb
-import models
+
 
 #########################KNOWLEDGE BASE#######################################
 ds = load_dataset("lavita/ChatDoctor-HealthCareMagic-100k", split="train")
