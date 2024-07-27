@@ -499,6 +499,11 @@ from langchain_core.prompts.chat import (
     HumanMessagePromptTemplate,
     SystemMessagePromptTemplate,
 )
+import os
+from dotenv import load_dotenv
+from datasets import load_dataset
+import import_ipynb
+
 
 
 
@@ -507,31 +512,13 @@ load_dotenv(r'C:\Users\91982\Desktop\Taskformer\.env')
 
 j = os.getenv('J')
 
-
-
-def generate_response(messages, jinachat_api_key):
-    chat = JinaChat(temperature=0, jinachat_api_key=j)
-    
-    # Generate a response using JinaChat
-    response = chat(messages)
-    
-    return response.content
-
-
-def query_documents(query_text, top_k=5):
-
-    query_embedding = model.encode([query_text])[0]
-    query_results = index.query(query_embedding.tolist(), top_k=top_k)
-    
-
-    matching_ids = [match['id'] for match in query_results['matches']]
-    return matching_ids
-
-
-def create_id_to_text_mapping(full_data):
-    return {f'id-{i}': text for i, text in enumerate(full_data)}
-
-
-id_to_text = create_id_to_text_mapping(full_data)
-
-
+messages = [
+    SystemMessage(
+        content="You are a helpful medical assistant that gives advice on any and all medical related queries. You try to advise someone if the need immediate help and need to go to the doctor."
+    ),
+    HumanMessage(
+        content="Hey, I've been feeling very tired and drowsy for the past week. Is that normal?"
+    ),
+]
+c=chat(messages)
+print(c.content)
