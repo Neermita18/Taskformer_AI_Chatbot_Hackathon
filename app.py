@@ -13,6 +13,7 @@ import pinecone
 import google.generativeai as genai
 import PIL.Image
 from model import full_data, id_to_text, model, index
+from PIL import Image
 
 from langchain_core.prompts.chat import (
     ChatPromptTemplate,
@@ -28,13 +29,19 @@ from langchain_core.prompts.chat import (
 st.cache_data()
 #########################KNOWLEDGE BASE#######################################
 with st.sidebar:
+    st.title("Before using ChatMed, create your own API keys for free")
     st.header("Enter your Jina Chat API Key here")
     j = st.text_input("Jina Chat API Key", key="chatbot_api_key", type="password")
-    st.text("Make sure to enter your correct API Key")
+    st.text("Make sure to enter your correct JinaChat API Key")
+    st.header("Enter your Gemini API Key here")
+    g= st.text_input("Gemini API Key", key="google", type="password")
+    st.text("Make sure to enter your correct Gemini API Key")
+
 
 # load_dotenv(r'C:\Users\91982\Desktop\Taskformer\.env')
 # j = os.getenv('J')
 gen_model = genai.GenerativeModel('gemini-1.5-pro')
+genai.configure(api_key=g)
 
 def query_documents(query_text, top_k=5):
 
@@ -43,13 +50,12 @@ def query_documents(query_text, top_k=5):
     matching_ids = [match['id'] for match in query_results['matches']]
     return matching_ids
 
-def generate_response(messages, jinachat_api_key):
+def generate_response(messages):
     chat = JinaChat(temperature=0, jinachat_api_key=j)
     response = chat(messages)
     return response.content
 
 def summarize_image_with_gemini(image, prompt):
-    # Use the generative model to summarize the image
     response = gen_model.generate_content([prompt, image])
     summary = response.text
     return summary
@@ -61,36 +67,37 @@ Describe concisely the characteristics of the image along with what diseases it 
 Describe the characteristics and the predicted disease. If it seems too bad, advise the user to go to a doctor.
 """
 
-st.title("💬 MedChat")
-st.caption("🚀 A Streamlit medical chatbot powered by JinaChat")
-
-uploaded_image = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
-text_input = st.text_input("Enter your query or description")
-
+st.title("💬 ChatMed")
+st.caption("🚀 A Streamlit medical chatbot powered by JinaChat and Gemini")
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
 
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
-
-if prompt := st.chat_input():
+    
+uploaded_image = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
+if prompt := st.chat_input("How are you feeling?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-    
+
+    if uploaded_image:
+        image = Image.open(uploaded_image)
+        st.image(image, caption='Uploaded Image.', use_column_width=True)
+        
+        summarized_text = summarize_image_with_gemini(image, image_summary_prompt)
+        prompt = summarized_text + "\n" + prompt
+
     similar_ids = query_documents(prompt)
     context = "\n".join([id_to_text.get(id, '') for id in similar_ids])
-    
-    # Prepare messages for JinaChat
+
     messages = [
         SystemMessage(
-            content=f"""You are a helpful medical assistant that gives advice on any and all medical related queries. You try to advise someone if the need immediate help and need to go to the doctor. You use the context to learn.
-            Context={context}"""
+            content=f"You are a helpful medical assistant that gives advice on any and all medical related queries. You try to advise someone if they need immediate help and need to go to the doctor.\nContext={context}"
         ),
         HumanMessage(content=prompt)
     ]
     
 
-    jinachat_api_key = j
-    response = generate_response(messages, jinachat_api_key)
+    response = generate_response(messages)
     st.session_state.messages.append({"role": "assistant", "content": response})
-    st.chat_message("assistant").write(response)
+    st.chat_message("assistant").write(summarized_text+response)

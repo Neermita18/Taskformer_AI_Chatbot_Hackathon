@@ -442,16 +442,15 @@ if index_name not in pc.list_indexes().names():
     )
 
 
-# %%
+
 index= pc.Index(index_name)
 
-# %%
+
 index.describe_index_stats()
 
-# %% [markdown]
-# ### Make embeddings to store
 
-# %%
+
+
 import torch
 
 from sentence_transformers import SentenceTransformer
@@ -462,63 +461,22 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 
 full_data=dataset1+dataset2+actual_desc+ai_desc
 
-print(len(full_data))
-def write_full_data_to_file(full_data, file_path):
-    with open(file_path, 'w',encoding='utf-8') as file:
-        for item in full_data:
-            file.write(f"{item}\n")
+
+def create_id_to_text_mapping(full_data):
+    return {f'id-{i}': text for i, text in enumerate(full_data)}
 
 
-file_path = "full_data.txt"
-write_full_data_to_file(full_data, file_path)
-
-
-
-# %%
-# from tqdm.auto import tqdm
-
-# def embed_and_upsert_texts(texts, batch_size=50):
-#     for i in tqdm(range(0, len(texts), batch_size)):
-#         batch_texts = texts[i:i + batch_size]
-#         embeddings = model.encode(batch_texts)
-#         ids = [f'id-{i + j}' for j in range(len(batch_texts))]
-#         vectors = list(zip(ids, embeddings))
-#         index.upsert(vectors)
-
-# # Embed and upsert texts in batches
-# embed_and_upsert_texts(full_data, batch_size=50)
-
-# print("All embeddings stored in Pinecone.")
-
-# %%
-from langchain_community.chat_models import JinaChat
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from langchain_core.prompts.chat import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-    SystemMessagePromptTemplate,
-)
-import os
-from dotenv import load_dotenv
-from datasets import load_dataset
-import import_ipynb
+id_to_text = create_id_to_text_mapping(full_data)
 
 
 
 
-load_dotenv(r'C:\Users\91982\Desktop\Taskformer\.env')
 
 
-j = os.getenv('J')
 
-messages = [
-    SystemMessage(
-        content="You are a helpful medical assistant that gives advice on any and all medical related queries. You try to advise someone if the need immediate help and need to go to the doctor."
-    ),
-    HumanMessage(
-        content="Hey, I've been feeling very tired and drowsy for the past week. Is that normal?"
-    ),
-]
-c=chat(messages)
-print(c.content)
+
+
+
+
+
+
